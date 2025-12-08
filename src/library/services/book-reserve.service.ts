@@ -25,8 +25,8 @@ export class BookReserveService {
 
   public async createReservation(id: string, user: IActiveUser) {
     const request = await this.reservationRepository.query().findOne({
-      bookId: new Types.ObjectId(id),
-      userId: user.sub,
+      book: new Types.ObjectId(id),
+      user: new Types.ObjectId(user.sub),
       requestStatus: { $in: [RequestStatus.APPROVED, RequestStatus.PENDING] },
     });
 
@@ -43,8 +43,8 @@ export class BookReserveService {
     }
 
     const borrowRecord = await this.borrowRepository.query().findOne({
-      bookId: new Types.ObjectId(id),
-      userId: user.sub,
+      book: new Types.ObjectId(id),
+      user: new Types.ObjectId(user.sub),
       bookStatus: { $in: [BookStatus.BORROWED, BookStatus.OVERDUE] },
     });
     if (borrowRecord) throw new BadRequestException('You cannot reserve a book you have already borrowed.');

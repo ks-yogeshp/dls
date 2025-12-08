@@ -24,13 +24,12 @@ export class BookReturnService {
     const record = await this.borrowRecordRepository
       .query()
       .findOne({
-        bookId: new Types.ObjectId(id),
-        userId: user.sub,
+        book: new Types.ObjectId(id),
+        user: new Types.ObjectId(user.sub),
         bookStatus: { $in: [BookStatus.BORROWED, BookStatus.OVERDUE] },
       })
       .populate(['book', 'user'])
       .exec();
-
     if (!record) {
       throw new BadRequestException('No borrow record found for this user and book');
     } else {

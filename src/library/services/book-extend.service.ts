@@ -15,8 +15,8 @@ export class BookExtendService {
     const record = await this.borrowRecordRepository
       .query()
       .findOne({
-        bookId: new Types.ObjectId(id),
-        userId: user.sub,
+        book: new Types.ObjectId(id),
+        user: new Types.ObjectId(user.sub),
         bookStatus: BookStatus.BORROWED,
       })
       .populate(['book', 'user'])

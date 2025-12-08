@@ -13,12 +13,8 @@ export class BorrowRecord extends AbstractSoftSchema {
   @Prop({ type: Types.ObjectId, ref: 'Book' })
   book: Types.ObjectId | BookDocument;
 
-  bookPopulate?: BookDocument ;
-
   @Prop({ type: Types.ObjectId, ref: 'User' })
   user: Types.ObjectId | UserDocument;
-
-  userPopulate?: UserDocument;
 
   @Prop({
     type: Date,
