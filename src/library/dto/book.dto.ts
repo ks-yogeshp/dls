@@ -1,8 +1,19 @@
+import { Field, ID, InputType, Int, ObjectType } from '@nestjs/graphql';
 import { ApiProperty, PickType } from '@nestjs/swagger';
-import { IsISBN, IsNotEmpty, IsString } from 'class-validator';
+import {
+  ArrayNotEmpty,
+  ArrayUnique,
+  IsArray,
+  IsInt,
+  IsISBN,
+  IsNotEmpty,
+  IsPositive,
+  IsString,
+  Min,
+} from 'class-validator';
 import { Types } from 'mongoose';
 
-import { BookDocument, IBookWihtBorrowCount } from 'src/database/schemas/book.schema';
+import * as bookSchema from 'src/database/schemas/book.schema';
 import { AvailabilityStatus } from 'src/database/schemas/enums/availibity-status.enum';
 import { Category } from 'src/database/schemas/enums/category.enum';
 import { Role } from 'src/database/schemas/enums/role.enum';
@@ -12,10 +23,11 @@ import {
   ObjectFieldOptional,
   StringField,
 } from '../../common/decorators/field.decorators';
-import { AuthorDto } from './author.dto';
-import { BorrowRecordDto } from './borrow-record.dto';
+import { AuthorDto, AuthorDtoDemo } from './author.dto';
+import { BorrowRecordDto, BorrowRecordDtoDemo } from './borrow-record.dto';
 import { MetadataSoftDto } from './metadata-soft.dto';
-import { ReservationRequestDto } from './reservation-request.dto';
+import { ReservationRequestDto, ReservationRequestDtoDemo } from './reservation-request.dto';
+import { Paginated } from 'src/common/dtos/page.dto';
 
 export type IBookDtoWihtBorrowCount = BookDto & { authorNames: string[]; borrowCount: number };
 
@@ -70,7 +82,7 @@ export class BookDto extends MetadataSoftDto {
   })
   availabilityStatus: AvailabilityStatus;
 
-  constructor(book: BookDocument, role?: Role) {
+  constructor(book: bookSchema.BookDocument, role?: Role) {
     super(book, role);
     this.id = book.id;
     this.name = book.name;
@@ -135,7 +147,7 @@ export class BookDtoWithBorrowCount extends BookDto {
   })
   borrowCount: number;
 
-  constructor(book: IBookWihtBorrowCount) {
+  constructor(book: bookSchema.IBookWihtBorrowCount) {
     super(book);
     this.borrowCount = book.borrowCount;
     this.authorNames = book.authorNames;
@@ -164,7 +176,7 @@ export class DetailedBookDto extends BookDto {
   })
   reservationHistory?: (string | ReservationRequestDto)[];
 
-  constructor(book: BookDocument, role?: Role) {
+  constructor(book: bookSchema.BookDocument, role?: Role) {
     super(book, role);
     this.authors = book.authors?.map((author) =>
       author instanceof Types.ObjectId ? author.toString() : new AuthorDto(author, role)
@@ -181,3 +193,165 @@ export class DetailedBookDto extends BookDto {
     );
   }
 }
+
+// import { IsISBN, IsNotEmpty, IsString, IsPositive, ArrayUnique, IsArray, IsInt, Min, ArrayNotEmpty } from 'class-validator';
+// import { Types } from 'mongoose';
+// import { MetadataSoftDto } from './metadata-soft.dto';
+// import { AuthorDto } from './author.dto';
+// import { BorrowRecordDto } from './borrow-record.dto';
+// import { ReservationRequestDto } from './reservation-request.dto';
+// import { AvailabilityStatus } from 'src/database/schemas/enums/availibity-status.enum';
+// import { Category } from 'src/database/schemas/enums/category.enum';
+// import { Role } from 'src/database/schemas/enums/role.enum';
+// import * as bookSchema from 'src/database/schemas/book.schema';
+
+@ObjectType()
+export class BookDtoDemo extends MetadataSoftDto {
+  @Field(() => ID)
+  id: string;
+
+  @Field()
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @Field()
+  @IsString()
+  @IsISBN()
+  @IsNotEmpty()
+  ISBN: string;
+
+  @Field(() => [Category])
+  category: Category[];
+
+  @Field(() => Int)
+  @IsPositive()
+  yearOfPublication: number;
+
+  @Field()
+  version: string;
+
+  @Field(() => AvailabilityStatus)
+  availabilityStatus: AvailabilityStatus;
+
+  constructor(book: bookSchema.BookDocument, role?: Role) {
+    super(book, role);
+    this.id = book._id.toString();
+    this.name = book.name;
+    this.ISBN = book.ISBN;
+    this.category = book.category;
+    this.yearOfPublication = book.yearOfPublication;
+    this.version = book.version;
+    this.availabilityStatus = book.availabilityStatus;
+  }
+}
+
+@ObjectType()
+export class BookDtoWithBorrowCountDemo extends BookDto {
+  @Field(() => [String])
+  authorNames: string[];
+
+  @Field(() => Int)
+  borrowCount: number;
+
+  constructor(book: bookSchema.IBookWihtBorrowCount) {
+    super(book);
+    this.authorNames = book.authorNames;
+    this.borrowCount = book.borrowCount;
+  }
+}
+
+@ObjectType()
+export class DetailedBookDtoDemo extends BookDtoDemo {
+  @Field(() => [AuthorDtoDemo], { nullable: 'itemsAndList' })
+  authors?: (string | AuthorDtoDemo)[];
+
+  @Field(() => [BorrowRecordDtoDemo], { nullable: 'itemsAndList' })
+  borrowingHistory?: (string | BorrowRecordDtoDemo)[];
+
+  @Field(() => [ReservationRequestDtoDemo], { nullable: 'itemsAndList' })
+  reservationHistory?: (string | ReservationRequestDtoDemo)[];
+
+  constructor(book: bookSchema.BookDocument, role?: Role) {
+    super(book, role);
+
+    this.authors = book.authors?.map((author) =>
+      author instanceof Types.ObjectId ? author.toString() : new AuthorDtoDemo(author, role)
+    ) ?? undefined;
+
+    this.borrowingHistory = book.borrowRecord?.map((record) =>
+      record instanceof Types.ObjectId ? record.toString() : new BorrowRecordDtoDemo(record, role)
+    ) ?? undefined;
+
+    this.reservationHistory = book.reservationRequest?.map((reservation) =>
+      reservation instanceof Types.ObjectId ? reservation.toString() : new ReservationRequestDtoDemo(reservation, role)
+    );
+  }
+}
+
+@InputType()
+export class CreateBookInput {
+  @Field()
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @Field()
+  @IsString()
+  @IsISBN()
+  @IsNotEmpty()
+  ISBN: string;
+
+  @Field(() => [Category])
+  @IsArray()
+  @ArrayNotEmpty()
+  category: Category[];
+
+  @Field(() => Int)
+  @IsInt()
+  @Min(0)
+  yearOfPublication: number;
+
+  @Field()
+  @IsString()
+  version: string;
+
+  @Field(() => [ID])
+  @IsArray()
+  @ArrayNotEmpty()
+  @ArrayUnique()
+  authorIds: string[];
+}
+
+@InputType()
+export class UpdateBookInput {
+  @Field({ nullable: true })
+  @IsString()
+  name?: string;
+
+  @Field({ nullable: true })
+  @IsString()
+  @IsISBN()
+  ISBN?: string;
+
+  @Field(() => [Category], { nullable: true })
+  @IsArray()
+  category?: Category[];
+
+  @Field(() => Int, { nullable: true })
+  @IsInt()
+  @Min(0)
+  yearOfPublication?: number;
+
+  @Field({ nullable: true })
+  @IsString()
+  version?: string;
+
+  @Field(() => [ID], { nullable: true })
+  @IsArray()
+  @ArrayUnique()
+  authorIds?: string[];
+}
+
+@ObjectType()
+export class PaginatedBooks extends Paginated(BookDtoDemo) {}

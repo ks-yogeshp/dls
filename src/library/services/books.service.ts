@@ -8,7 +8,7 @@ import { QueryService } from 'src/common/query/query.service';
 import { AuthorRepository } from 'src/database/repositories/author.repository';
 import { BookRepository } from 'src/database/repositories/book.repository';
 import { Book, BookDocument } from 'src/database/schemas/book.schema';
-import { CreateBookDto, UpdateBookDto } from '../dto/book.dto';
+import { CreateBookInput, UpdateBookInput } from '../dto/book.dto';
 import { CheckoutDto } from '../dto/checkout.dto';
 import { ExtendDto } from '../dto/extend.dto';
 import { BookCheckoutService } from './book-checkout.service';
@@ -61,30 +61,30 @@ export class BooksService {
     const book = await this.bookRepository
       .query()
       .findById(new Types.ObjectId(id))
-      .populate(['authors', 'borrowingHistory', 'reservationHistory']);
+      .populate(['authors', 'borrowRecord', 'reservationRequest']);
     if (!book) throw new NotFoundException('Book not Found');
 
     return book;
   }
 
-  public async createBook(user: IActiveUser, createBookDto: CreateBookDto) {
-    const existingBook = await this.bookRepository.query().findOne({ ISBN: createBookDto.ISBN });
+  async createBook(createBookInput: CreateBookInput, user: IActiveUser) {
+    const existingBook = await this.bookRepository.query().findOne({ ISBN: createBookInput.ISBN });
     if (existingBook) throw new BadRequestException('Book already exists with this ISBN number');
-    if (!Array.isArray(createBookDto.authorIds) || createBookDto.authorIds.length === 0) {
+    if (!Array.isArray(createBookInput.authorIds) || createBookInput.authorIds.length === 0) {
       throw new BadRequestException('authorsIds must be a non-empty array');
     }
 
     const authors = await this.authorRepository.query().find({
-      id: { $in: createBookDto.authorIds.map((id) => new Types.ObjectId(id)) },
+      _id: { $in: createBookInput.authorIds.map((id) => new Types.ObjectId(id)) },
     });
-    if (authors.length !== createBookDto.authorIds.length)
+    if (authors.length !== createBookInput.authorIds.length)
       throw new NotFoundException('One or more authors were not found.');
     const newBook = new Book();
-    newBook.name = createBookDto.name;
-    newBook.ISBN = createBookDto.ISBN;
-    newBook.category = createBookDto.category;
-    newBook.version = createBookDto.version;
-    newBook.yearOfPublication = createBookDto.yearOfPublication;
+    newBook.name = createBookInput.name;
+    newBook.ISBN = createBookInput.ISBN;
+    newBook.category = createBookInput.category;
+    newBook.version = createBookInput.version;
+    newBook.yearOfPublication = createBookInput.yearOfPublication;
     newBook.createdBy = user.sub;
     newBook.authors = authors.map((author) => author._id);
     let savedBook: BookDocument;
@@ -95,39 +95,44 @@ export class BooksService {
         for (const author of authors) {
           await this.authorRepository
             .query()
-            .updateOne({ _id: author._id }, { $push: { books: savedBook._id } }, { session });
+            .updateOne({ _id: author._id }, { $push: { books: book._id } }, { session });
         }
         return book;
       });
     } finally {
       await session.endSession();
     }
-    return savedBook;
+    const populatedBook = await this.bookRepository.query().findById(savedBook._id).populate('authors');
+    if (!populatedBook) {
+      throw new NotFoundException('Saved book not found after creation');
+    }
+    return populatedBook;
+
   }
 
-  public async updateBook(id: string, user: IActiveUser, updateBookDto: UpdateBookDto) {
+
+  public async updateBook(id: string, user: IActiveUser, updateBookInput: UpdateBookInput) {
     const existingBook = await this.bookRepository.query().findById(id);
 
     if (!existingBook) throw new NotFoundException('Book does not exist with this Id');
 
     const newAuthors = await this.authorRepository.query().find({
-      id: { $in: updateBookDto.authorIds.map((id) => new Types.ObjectId(id)) },
+      id: { $in: updateBookInput.authorIds?.map((id) => new Types.ObjectId(id)) },
     });
 
-    if (newAuthors.length !== updateBookDto.authorIds.length)
+    if (newAuthors.length !== updateBookInput.authorIds?.length)
       throw new NotFoundException('One or more authors were not found.');
 
-    existingBook.name = updateBookDto.name ?? existingBook.name;
-    existingBook.yearOfPublication = updateBookDto.yearOfPublication ?? existingBook.yearOfPublication;
-    existingBook.category = updateBookDto.category ?? existingBook.category;
-    existingBook.version = updateBookDto.version ?? existingBook.version;
+    existingBook.name = updateBookInput.name ?? existingBook.name;
+    existingBook.yearOfPublication = updateBookInput.yearOfPublication ?? existingBook.yearOfPublication;
+    existingBook.category = updateBookInput.category ?? existingBook.category;
+    existingBook.version = updateBookInput.version ?? existingBook.version;
     existingBook.updatedBy = user.sub;
-    // existingBook.authors = updateBookDto.authorIds ? authors : existingBook.authors;
     const newAuthorsId = newAuthors.map((author) => author._id);
     const session = await this.connection.startSession();
     try {
       await session.withTransaction(async () => {
-        if (updateBookDto.authorIds) {
+        if (updateBookInput.authorIds) {
           if (existingBook.authors) {
             for (const author of existingBook.authors as Types.ObjectId[]) {
               if (!newAuthorsId.includes(author)) {
@@ -159,7 +164,11 @@ export class BooksService {
     } finally {
       await session.endSession();
     }
-    return existingBook;
+    const updatedBook = await this.bookRepository.query().findById(existingBook._id).populate('authors');
+    if (!updatedBook) {
+      throw new NotFoundException('Saved book not found after creation');
+    }
+    return updatedBook;
   }
 
   public async deleteBook(id: string, user: IActiveUser) {

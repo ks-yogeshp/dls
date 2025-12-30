@@ -6,7 +6,7 @@ import { QueryDto } from 'src/common/dtos/query.dto';
 import { QueryService } from 'src/common/query/query.service';
 import { UserRepository } from 'src/database/repositories/user.repository';
 import { User } from 'src/database/schemas/user.schema';
-import { CreateUserDto, UpdateUserDto } from '../dto/user.dto';
+import { CreateUserDto, UpdateUserInput } from '../dto/user.dto';
 
 @Injectable()
 export class UsersService {
@@ -52,13 +52,13 @@ export class UsersService {
     return this.userRepository.query().insertOne(newUser);
   }
 
-  public async updateUser(id: Types.ObjectId, updateUserDto: UpdateUserDto) {
+  public async updateUser(id: Types.ObjectId, updateUserInput: UpdateUserInput) {
     const existingUser = await this.userRepository.query().findById(id);
 
     if (!existingUser) throw new NotFoundException('User does not exist with this Id');
 
-    existingUser.firstName = updateUserDto.firstName ?? existingUser.firstName;
-    existingUser.lastName = updateUserDto.lastName ?? existingUser.lastName;
+    existingUser.firstName = updateUserInput.firstName ?? existingUser.firstName;
+    existingUser.lastName = updateUserInput.lastName ?? existingUser.lastName;
 
     return await existingUser.save();
   }

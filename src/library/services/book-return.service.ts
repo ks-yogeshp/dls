@@ -17,7 +17,7 @@ export class BookReturnService {
     private readonly reservationRequestSerivce: ReservationRequestService,
 
     @InjectConnection()
-    private readonly connection: Connection,
+    private readonly connection: Connection
   ) {}
 
   public async bookReturn(id: string, user: IActiveUser) {

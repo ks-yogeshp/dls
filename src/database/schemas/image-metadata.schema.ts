@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
+
 import { Author } from './author.schema';
 import { Book } from './book.schema';
 
@@ -7,7 +8,6 @@ export type ImageMetadataDocument = HydratedDocument<ImageMetadata>;
 
 @Schema()
 export class ImageMetadata {
-
   @Prop({ type: Types.ObjectId, ref: Author.name, required: false })
   author?: Types.ObjectId;
 

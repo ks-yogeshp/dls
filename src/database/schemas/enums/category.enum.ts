@@ -1,3 +1,5 @@
+import { registerEnumType } from '@nestjs/graphql';
+
 export enum Category {
   FICTION = 'fiction',
   NON_FICTION = 'non_fiction',
@@ -18,3 +20,7 @@ export enum Category {
   TRAVEL = 'travel',
   OTHER = 'other',
 }
+registerEnumType(Category, {
+  name: 'Category', // This will be the name in GraphQL schema
+  description: 'Category or genre of the book',
+});

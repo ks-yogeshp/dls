@@ -34,7 +34,6 @@ export class QuerySearchService {
     if (!search) return {};
 
     const schemaName = model.modelName;
-    console.log('buildSearchNew schemaName', schemaName);
 
     // Prevent infinite recursion in cyclic schemas
     if (visitedModels.has(schemaName)) return {};
@@ -79,7 +78,6 @@ export class QuerySearchService {
     const subfields: any[] = Object.values(model.schema['subpaths'])
       .filter((s) => (s as Record<string, any>)['schemaName'] === 'ObjectId')
       .map((s) => (s as Record<string, any>)['path']);
-    console.log('subfields', subfields);
 
     for (const field of fields) {
       const path = schemaPaths[field];
@@ -124,8 +122,6 @@ export class QuerySearchService {
     // 4. Combine all $or conditions
     // -----------------------------
     const allConditions = [...directConditions, ...nestedConditions, ...refConditions.flatMap((c) => c)];
-    console.log('refConditions', refConditions);
-    console.log('buildSearchNew conditions', allConditions);
     return allConditions.length > 0 ? ({ $or: allConditions } as FilterQuery<T>) : ({} as FilterQuery<T>);
   };
 

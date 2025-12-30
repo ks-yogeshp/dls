@@ -2,8 +2,8 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
 
 import { AbstractSoftSchema } from './abstract-soft.schema';
-import { BookStatus } from './enums/book-status.enum';
 import { BookDocument } from './book.schema';
+import { BookStatus } from './enums/book-status.enum';
 import { UserDocument } from './user.schema';
 
 export type BorrowRecordDocument = HydratedDocument<BorrowRecord>;

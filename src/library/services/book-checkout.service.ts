@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { InjectConnection } from '@nestjs/mongoose';
 import { add, startOfDay } from 'date-fns';
 import { Connection, Types } from 'mongoose';
 
@@ -9,7 +10,6 @@ import { UserRepository } from 'src/database/repositories/user.repository';
 import { BorrowRecord, BorrowRecordDocument } from 'src/database/schemas/borrow-record.schema';
 import { AvailabilityStatus } from '../../database/schemas/enums/availibity-status.enum';
 import { CheckoutDto } from '../dto/checkout.dto';
-import { InjectConnection } from '@nestjs/mongoose';
 
 @Injectable()
 export class BookCheckoutService {
@@ -21,7 +21,7 @@ export class BookCheckoutService {
     private readonly borrowRecordRepository: BorrowRecordRepository,
 
     @InjectConnection()
-    private readonly connection: Connection,
+    private readonly connection: Connection
   ) {}
 
   public async checkout(
@@ -29,10 +29,8 @@ export class BookCheckoutService {
     user: IActiveUser,
     checkoutDto: CheckoutDto
   ): Promise<BorrowRecordDocument> {
-    console.log('Checkout Service Invoked');
     const bookDetail = await this.bookRepository.query().findById(new Types.ObjectId(id));
     const userDetail = await this.userRepository.query().findById(user.sub);
-    console.log('Book Detail and User Detail fetched');
     if (!bookDetail || !userDetail) {
       throw new BadRequestException('Invalid book or user. Please check the IDs.');
     }
@@ -53,27 +51,29 @@ export class BookCheckoutService {
     try {
       insertedDoc = await session.withTransaction(async () => {
         const createdRecord = await this.borrowRecordRepository.query().insertOne(newRecord, { session });
-        await this.bookRepository.query().updateOne(
-          { _id: bookDetail._id },
-          { $set: { availabilityStatus: AvailabilityStatus.UNAVAILABLE }, $push: { borrowRecord: createdRecord._id } },
-          { session }
-        );
-        await this.userRepository.query().updateOne(
-          { _id: userDetail._id },
-          { $push: { borrowRecord: createdRecord._id } },
-          { session }
-        );
+        await this.bookRepository
+          .query()
+          .updateOne(
+            { _id: bookDetail._id },
+            {
+              $set: { availabilityStatus: AvailabilityStatus.UNAVAILABLE },
+              $push: { borrowRecord: createdRecord._id },
+            },
+            { session }
+          );
+        await this.userRepository
+          .query()
+          .updateOne({ _id: userDetail._id }, { $push: { borrowRecord: createdRecord._id } }, { session });
         return createdRecord;
-
       });
     } finally {
       await session.endSession();
     }
-    console.log('Borrow record: ', insertedDoc);
-    const populatedRecord = await this.borrowRecordRepository.query()
-    .findById(insertedDoc._id)
-    .populate('book')
-    .populate('user');
+    const populatedRecord = await this.borrowRecordRepository
+      .query()
+      .findById(insertedDoc._id)
+      .populate('book')
+      .populate('user');
     if (!populatedRecord) {
       throw new BadRequestException('Error populating borrow record after creation.');
     }

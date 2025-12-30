@@ -1,6 +1,6 @@
 import { Types } from 'mongoose';
 
-import { BorrowRecordDocument } from 'src/database/schemas/borrow-record.schema';
+import * as borrowRecordSchema from 'src/database/schemas/borrow-record.schema';
 import { BookStatus } from 'src/database/schemas/enums/book-status.enum';
 import { Role } from 'src/database/schemas/enums/role.enum';
 import {
@@ -12,8 +12,8 @@ import {
   StringFieldOptional,
 } from '../../common/decorators/field.decorators';
 import { AbstractSoftDto } from './abstract-soft.dto';
-import { BookDto } from './book.dto';
-import { UserDto } from './user.dto';
+import { BookDtoDemo } from './book.dto';
+import { UserDtoDemo } from './user.dto';
 
 export class BorrowRecordDto extends AbstractSoftDto {
   @StringField({
@@ -26,13 +26,13 @@ export class BorrowRecordDto extends AbstractSoftDto {
     description: 'Unique identifier for the book',
     example: '64b2f3c1b5d9a6a1e2d3f4b5',
   })
-  book?: string | BookDto;
+  book?: string | BookDtoDemo;
 
   @StringFieldOptional({
     description: 'Unique identifier for the user',
     example: '64b2f3c1b5d9a6a1e2d3f4b5',
   })
-  user?: string | UserDto;
+  user?: string | UserDtoDemo;
 
   @DateField({
     description: 'Date when the book was borrowed',
@@ -80,18 +80,18 @@ export class BorrowRecordDto extends AbstractSoftDto {
   })
   bookStatus: BookStatus;
 
-  constructor(borrowRecord: BorrowRecordDocument, role?: Role) {
+  constructor(borrowRecord: borrowRecordSchema.BorrowRecordDocument, role?: Role) {
     super(borrowRecord, role);
     this.id = borrowRecord.id;
     this.user = borrowRecord.user
       ? borrowRecord.user instanceof Types.ObjectId
         ? borrowRecord.user.toString()
-        : new UserDto(borrowRecord.user, role)
+        : new UserDtoDemo(borrowRecord.user)
       : undefined;
     this.book = borrowRecord.book
       ? borrowRecord.book instanceof Types.ObjectId
         ? borrowRecord.book.toString()
-        : new BookDto(borrowRecord.book, role)
+        : new BookDtoDemo(borrowRecord.book, role)
       : undefined;
     this.borrowDate = borrowRecord.borrowDate;
     this.dueDate = borrowRecord.dueDate;
@@ -100,5 +100,69 @@ export class BorrowRecordDto extends AbstractSoftDto {
     this.extensionCount = borrowRecord.extensionCount;
     this.bookStatus = borrowRecord.bookStatus;
     this.returnDate = borrowRecord.returnDate;
+  }
+}
+import { Field, ID, ObjectType, Int } from '@nestjs/graphql';
+// import { BookDto } from './book.dto';
+// import { UserDto } from './user.dto';
+// import { BorrowRecordDocument } from 'src/database/schemas/borrow-record.schema';
+// import { Role } from 'src/database/schemas/enums/role.enum';
+// import { BookStatus } from 'src/database/schemas/enums/book-status.enum';
+
+@ObjectType()
+export class BorrowRecordDtoDemo {
+  @Field(() => ID)
+  id: string;
+
+  @Field(() => BookDtoDemo, { nullable: true })
+  book?: BookDtoDemo;
+
+  @Field(() => UserDtoDemo, { nullable: true })
+  user?: UserDtoDemo;
+
+  @Field()
+  borrowDate: Date;
+
+  @Field()
+  dueDate: Date;
+
+  @Field({ nullable: true })
+  returnDate?: Date;
+
+  @Field(() => Int, { nullable: true })
+  penalty?: number;
+
+  @Field({ nullable: true })
+  penaltyPaid?: boolean;
+
+  @Field(() => Int)
+  extensionCount: number;
+
+  @Field(() => BookStatus)
+  bookStatus: BookStatus;
+
+  constructor(borrowRecord: borrowRecordSchema.BorrowRecordDocument, role?: Role) {
+    this.id = borrowRecord.id;
+    this.user = borrowRecord.user
+      ? borrowRecord.user instanceof Object
+        ? !(borrowRecord.user instanceof Types.ObjectId)
+          ? new UserDtoDemo(borrowRecord.user)
+          : undefined
+        : undefined
+      : undefined;
+    this.book = borrowRecord.book
+      ? borrowRecord.book instanceof Object
+        ? !(borrowRecord.book instanceof Types.ObjectId)
+          ? new BookDtoDemo(borrowRecord.book, role)
+          : undefined
+        : undefined
+      : undefined;
+    this.borrowDate = borrowRecord.borrowDate;
+    this.dueDate = borrowRecord.dueDate;
+    this.returnDate = borrowRecord.returnDate;
+    this.penalty = borrowRecord.penalty;
+    this.penaltyPaid = borrowRecord.penaltyPaid;
+    this.extensionCount = borrowRecord.extensionCount;
+    this.bookStatus = borrowRecord.bookStatus;
   }
 }

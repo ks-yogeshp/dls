@@ -13,3 +13,17 @@ export class LoginDto {
   })
   password: string;
 }
+import { InputType, Field } from '@nestjs/graphql';
+
+@InputType()
+export class LoginInput {
+  @Field({
+    description: 'User email',
+  })
+  email: string;
+
+  @Field({
+    description: 'User password',
+  })
+  password: string;
+}

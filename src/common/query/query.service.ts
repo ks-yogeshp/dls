@@ -1,11 +1,11 @@
 import type { Request } from 'express';
 import { Inject, Injectable, Scope } from '@nestjs/common';
-import { REQUEST } from '@nestjs/core';
 import { PipelineStage } from 'mongoose';
 
 import { QueryOptionsMongoDto } from '../dtos/query.options.dto';
 import { QueryFilterService } from './query-filter.service';
 import { QuerySearchService } from './query-search.service';
+import { REQUEST } from '@nestjs/core';
 
 @Injectable({ scope: Scope.REQUEST })
 export class QueryService {
@@ -19,7 +19,6 @@ export class QueryService {
   ) {}
 
   public async query<T, M extends Record<string, any>>(options: QueryOptionsMongoDto<T, M>) {
-    console.log('mongoQuery options', options);
 
     const { query, model, searchFieldMap, relations, searchOptions = 'partial' } = options;
 
@@ -34,11 +33,8 @@ export class QueryService {
 
     const filter = query.filters ? this.queryFilterService.buildFilter(model, query.filters) : {};
 
-    console.log('mongoQuery search before merge', search);
-    console.log('mongoQuery filter before merge', filter);
     // Merge search into mongoQuery object
     // const mongoQuery: QueryOptions = { ...search };
-    // console.log('mongoQuery mongoQuery before filter', search);
 
     // -----------------------------
     // 2. Pagination setup
@@ -64,12 +60,10 @@ export class QueryService {
       });
     });
     if (filter && Object.keys(filter).length > 0) {
-      console.log('Adding filter to pipeline', filter);
       pipeline.push({ $match: filter });
     }
     // 3b. Add $match stage for search conditions
     if (search && Object.keys(search).length > 0) {
-      console.log('Adding search to pipeline', search);
       pipeline.push({ $match: search });
     }
 
@@ -111,8 +105,8 @@ export class QueryService {
     // -----------------------------
     // 8. Build new URL for pagination links
     // -----------------------------
-    const base = `${this.request.protocol}://${this.request.headers.host}/`;
-    const newUrl = new URL(this.request.url, base);
+    const base = `${this.request?.protocol}://${this.request?.headers.host}/`;
+    const newUrl = this.request ? new URL(this.request.url, base): new URL(base);
 
     // -----------------------------
     // 9. Return results

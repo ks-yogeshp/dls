@@ -189,11 +189,9 @@ export class QueryFilterService {
   ): FilterQuery<T> => {
     const query: FilterQuery<T> = {};
     const schemaPaths = model.schema.paths;
-    console.log('buildFilter filters', filters);
     for (const key in filters) {
       const path = schemaPaths[key];
       if (!path) continue;
-      console.log('buildFilter key', key);
       if (!Object.prototype.hasOwnProperty.call(filters, key)) continue;
 
       const filter = filters[key];
@@ -204,8 +202,6 @@ export class QueryFilterService {
 
       query[key as keyof T] = condition;
     }
-    console.log('filterQuery result', query);
-
     return query;
   };
 

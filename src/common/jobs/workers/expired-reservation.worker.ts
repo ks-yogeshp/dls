@@ -15,7 +15,7 @@ export class ExpiredReservationWorker extends WorkerHost {
     private readonly reservationRequestRepository: ReservationRequestRepository,
     private readonly reservationRequestService: ReservationRequestService,
     @InjectConnection()
-    private readonly connection: Connection,
+    private readonly connection: Connection
   ) {
     super();
   }

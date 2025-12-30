@@ -4,19 +4,16 @@ import { ApiBearerAuth, ApiUnauthorizedResponse } from '@nestjs/swagger';
 
 import { Role } from 'src/database/schemas/enums/role.enum';
 import { RoleGuard, Roles } from '../guards/role.guard';
+import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 
 export const AUTH_GUARD = Symbol('auth-guard');
 
 export function Auth(options?: { isPublic?: string; permissions?: string[]; roles?: Role[] }) {
-  // const guards = [];
-  const strategies = options?.isPublic ? [options.isPublic] : ['jwt'];
+  const strategies = options?.isPublic ? AuthGuard(options.isPublic) : JwtAuthGuard;
   const decorators: PropertyDecorator[] = [];
-  if (strategies.includes('jwt')) {
+  if (!options?.isPublic) {
     decorators.push(ApiBearerAuth());
   }
-  // if (options?.permissions) {
-  //   guards.push(Permissions(...options.permissions));
-  // }
 
   if (options?.roles) {
     decorators.push(Roles(...options.roles));
@@ -25,8 +22,7 @@ export function Auth(options?: { isPublic?: string; permissions?: string[]; role
   return applyDecorators(
     SetMetadata(AUTH_GUARD, true),
     ...decorators,
-    UseGuards(AuthGuard(strategies), RoleGuard),
-    // ...guards,
+    UseGuards(strategies, RoleGuard),
 
     ApiUnauthorizedResponse({ description: 'Unauthorized' })
   );

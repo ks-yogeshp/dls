@@ -1,11 +1,11 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
 
+import { SoftDeletePlugin } from '../plugins/soft-delete.plugin';
 import { AbstractSoftSchema } from './abstract-soft.schema';
 import { BorrowRecordDocument } from './borrow-record.schema';
 import { Role } from './enums/role.enum';
 import { ReservationRequestDocument } from './reservation-request.schema';
-import { SoftDeletePlugin } from '../plugins/soft-delete.plugin';
 
 export type UserDocument = HydratedDocument<User>;
 export type IUserWithPenalty = UserDocument & { totalPenalty: number };

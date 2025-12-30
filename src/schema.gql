@@ -1,0 +1,277 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type PageMetaDto {
+  itemsPerPage: Int!
+  totalItems: Int!
+  currentPage: Int!
+  totalPages: Int!
+}
+
+type AuthorDtoDemo {
+  id: ID!
+  name: String!
+  email: String!
+  country: String
+}
+
+type DetailedAuthorDtoDemo {
+  books: [BookDtoDemo]
+}
+
+type ReservationRequestDtoDemo {
+  id: ID!
+  book: BookDtoDemo
+  user: UserDtoDemo
+  requestDate: DateTime!
+  requestStatus: RequestStatus!
+  active_until: DateTime
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+"""The status of a request in the system"""
+enum RequestStatus {
+  PENDING
+  CANCELLED
+  APPROVED
+  FULFILLED
+  EXPIRE
+}
+
+type BookDtoDemo {
+  id: ID!
+  name: String!
+  ISBN: String!
+  category: [Category!]!
+  yearOfPublication: Int!
+  version: String!
+  availabilityStatus: AvailabilityStatus!
+}
+
+"""Category or genre of the book"""
+enum Category {
+  FICTION
+  NON_FICTION
+  SCIENCE
+  TECHNOLOGY
+  HISTORY
+  BIOGRAPHY
+  ART
+  CHILDREN
+  EDUCATION
+  MYSTERY
+  ROMANCE
+  FANTASY
+  SELF_HELP
+  RELIGION
+  POETRY
+  BUSINESS
+  TRAVEL
+  OTHER
+}
+
+"""The current availability status of the book"""
+enum AvailabilityStatus {
+  AVAILABLE
+  UNAVAILABLE
+}
+
+type DetailedBookDtoDemo {
+  id: ID!
+  name: String!
+  ISBN: String!
+  category: [Category!]!
+  yearOfPublication: Int!
+  version: String!
+  availabilityStatus: AvailabilityStatus!
+  authors: [AuthorDtoDemo]
+  borrowingHistory: [BorrowRecordDtoDemo]
+  reservationHistory: [ReservationRequestDtoDemo]
+}
+
+type PaginatedBooks {
+  data: [BookDtoDemo!]!
+  meta: PageMetaDto
+}
+
+type BorrowRecordDtoDemo {
+  id: ID!
+  book: BookDtoDemo
+  user: UserDtoDemo
+  borrowDate: DateTime!
+  dueDate: DateTime!
+  returnDate: DateTime
+  penalty: Int
+  penaltyPaid: Boolean
+  extensionCount: Int!
+  bookStatus: BookStatus!
+}
+
+"""The current status of the book"""
+enum BookStatus {
+  BORROWED
+  RETURNED
+  OVERDUE
+}
+
+type UserDtoDemo {
+  id: ID!
+  firstName: String!
+  lastName: String
+  email: String!
+  role: Role!
+}
+
+"""Role of the user in the system"""
+enum Role {
+  ADMIN
+  MANAGER
+  STUDENT
+}
+
+type UserDtoWithPenaltyDemo {
+  id: ID!
+  firstName: String!
+  lastName: String
+  email: String!
+  role: Role!
+  totalPenalty: Float!
+}
+
+type DetailedUserDtoDemo {
+  id: ID!
+  firstName: String!
+  lastName: String
+  email: String!
+  role: Role!
+  borrowingHistory: [BorrowRecordDtoDemo]
+  reservationHistory: [ReservationRequestDtoDemo]
+}
+
+type SuccessDto {
+  """Indicates whether the operation was successful"""
+  success: Boolean!
+}
+
+type Query {
+  getAllBooks(query: QueryDto): PaginatedBooks!
+  getBookById(id: String!): DetailedBookDtoDemo!
+  getAllAuthors(query: QueryDto): [AuthorDtoDemo!]!
+  getAuthorById(id: String!): DetailedAuthorDtoDemo!
+  getAllUsers: [BorrowRecordDtoDemo!]!
+  getUserById: DetailedUserDtoDemo!
+  penaltiesSummary(penaltySummary: PenaltySummaryDto!): [UserDtoWithPenaltyDemo!]!
+
+  """Export penalties summary as CSV"""
+  exportPenaltiesCSV(penaltySummary: PenaltySummaryDto!): String!
+  getBookActivity(bookActivitySummary: BookActivitySummaryDto!): [BorrowRecordDtoDemo!]!
+}
+
+input QueryDto {
+  """Page number for pagination"""
+  page: Int! = 1
+
+  """Number of items per page"""
+  limit: Int! = 10
+
+  """Search keyword (applies to name, title, etc.)"""
+  search: String
+
+  """Field to sort results by"""
+  sortBy: String
+
+  """Sort order (ASC or DESC)"""
+  sortOrder: String
+
+  """Filters object. (e.g., filters[category][eq]=FICTION)"""
+  filters: JSON
+}
+
+"""
+The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
+"""
+scalar JSON
+
+input PenaltySummaryDto {
+  start: String
+  end: String
+  limit: Int
+}
+
+input BookActivitySummaryDto {
+  year: Int
+  month: Int
+  startDate: String
+  endDate: String
+  categoryIds: [Category]
+  limit: Int
+}
+
+type Mutation {
+  createBook(createBookInput: CreateBookInput!): DetailedBookDtoDemo!
+  updateBook(id: String!, updateBookInput: UpdateBookInput!): DetailedBookDtoDemo!
+  deleteBook(id: String!): SuccessDto!
+  bookCheckout(id: String!, checkoutBook: CheckoutDto!): BorrowRecordDtoDemo!
+  bookReturn(id: String!): BorrowRecordDtoDemo!
+  extendBook(id: String!, extendBook: ExtendDto!): BorrowRecordDtoDemo!
+  createReservationResquest(id: String!): ReservationRequestDtoDemo!
+  createAuthor(createAuthorInput: CreateAuthorInput!): DetailedAuthorDtoDemo!
+  updateAuthor(id: String!, updateAuthorInput: UpdateAuthorInput!): DetailedAuthorDtoDemo!
+  deleteAuthor(id: String!): SuccessDto!
+  updateUser(updateUserInput: UpdateUserInput!): DetailedUserDtoDemo!
+  deleteUser: SuccessDto!
+  reserveBook(id: String!, checkoutReservationRequest: CheckoutReservationRequestDto!): BorrowRecordDtoDemo!
+  cancelReservation(id: String!): ReservationRequestDtoDemo!
+}
+
+input CreateBookInput {
+  name: String!
+  ISBN: String!
+  category: [Category!]!
+  yearOfPublication: Int!
+  version: String!
+  authorIds: [ID!]!
+}
+
+input UpdateBookInput {
+  name: String
+  ISBN: String
+  category: [Category!]
+  yearOfPublication: Int
+  version: String
+  authorIds: [ID!]
+}
+
+input CheckoutDto {
+  days: Int! = 14
+}
+
+input ExtendDto {
+  days: Int! = 7
+}
+
+input CreateAuthorInput {
+  name: String!
+  email: String!
+  country: String
+}
+
+input UpdateAuthorInput {
+  name: String
+  country: String
+}
+
+input UpdateUserInput {
+  firstName: String
+  lastName: String
+}
+
+input CheckoutReservationRequestDto {
+  """Number of days the book will be borrowed"""
+  days: Int! = 14
+}

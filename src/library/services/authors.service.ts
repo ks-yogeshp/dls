@@ -7,7 +7,7 @@ import { QueryDto } from 'src/common/dtos/query.dto';
 import { QueryService } from 'src/common/query/query.service';
 import { AuthorRepository } from 'src/database/repositories/author.repository';
 import { Author } from 'src/database/schemas/author.schema';
-import { CreateAuthorDto, UpdateAuthorDto } from '../dto/author.dto';
+import { CreateAuthorInput, UpdateAuthorInput } from '../dto/author.dto';
 
 @Injectable()
 export class AuthorsService {
@@ -39,27 +39,27 @@ export class AuthorsService {
     return author;
   }
 
-  public async createAuthor(user: IActiveUser, createAuthorDto: CreateAuthorDto) {
-    const existingAuthor = await this.authorRepository.query().findOne({ email: createAuthorDto.email });
+  public async createAuthor(user: IActiveUser, createAuthorInput: CreateAuthorInput) {
+    const existingAuthor = await this.authorRepository.query().findOne({ email: createAuthorInput.email });
 
     if (existingAuthor) throw new BadRequestException('Author already exists with this email');
 
     const newAuthor = new Author();
-    newAuthor.name = createAuthorDto.name;
-    newAuthor.email = createAuthorDto.email;
-    newAuthor.country = createAuthorDto.country;
+    newAuthor.name = createAuthorInput.name;
+    newAuthor.email = createAuthorInput.email;
+    newAuthor.country = createAuthorInput.country;
     newAuthor.createdBy = user.sub;
 
     return await this.authorRepository.query().insertOne(newAuthor);
   }
 
-  public async updateAuthor(id: string, user: IActiveUser, updateAuthorDto: UpdateAuthorDto) {
+  public async updateAuthor(id: string, user: IActiveUser, updateAuthorInput: UpdateAuthorInput) {
     const existingAuthor = await this.authorRepository.query().findById(new Types.ObjectId(id));
 
     if (!existingAuthor) throw new NotFoundException('Author does not exist with this Id');
 
-    existingAuthor.name = updateAuthorDto.name ?? existingAuthor.name;
-    existingAuthor.country = updateAuthorDto.country ?? existingAuthor.country;
+    existingAuthor.name = updateAuthorInput.name ?? existingAuthor.name;
+    existingAuthor.country = updateAuthorInput.country ?? existingAuthor.country;
     existingAuthor.updatedBy = user.sub;
     await existingAuthor.save();
 

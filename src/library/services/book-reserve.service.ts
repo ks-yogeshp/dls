@@ -10,7 +10,10 @@ import { UserRepository } from 'src/database/repositories/user.repository';
 import { AvailabilityStatus } from 'src/database/schemas/enums/availibity-status.enum';
 import { BookStatus } from 'src/database/schemas/enums/book-status.enum';
 import { RequestStatus } from 'src/database/schemas/enums/request-status.enum';
-import { ReservationRequest, ReservationRequestDocument } from 'src/database/schemas/reservation-request.schema';
+import {
+  ReservationRequest,
+  ReservationRequestDocument,
+} from 'src/database/schemas/reservation-request.schema';
 
 @Injectable()
 export class BookReserveService {
@@ -20,7 +23,7 @@ export class BookReserveService {
     private readonly bookRepository: BookRepository,
     private readonly userRepository: UserRepository,
     @InjectConnection()
-    private readonly connection: Connection,
+    private readonly connection: Connection
   ) {}
 
   public async createReservation(id: string, user: IActiveUser) {
@@ -57,25 +60,22 @@ export class BookReserveService {
     try {
       insertedDoc = await session.withTransaction(async () => {
         const createdReq = await this.reservationRepository.query().insertOne(newRequst, { session });
-        await this.bookRepository.query().updateOne(
-          { _id: bookDetail._id },
-          { $push: { reservationRequest: createdReq._id } },
-          { session }
-        );
-        await this.userRepository.query().updateOne(
-          { _id: userDetail._id },
-          { $push: { reservationRequest: createdReq._id } },
-          { session }
-        );
+        await this.bookRepository
+          .query()
+          .updateOne({ _id: bookDetail._id }, { $push: { reservationRequest: createdReq._id } }, { session });
+        await this.userRepository
+          .query()
+          .updateOne({ _id: userDetail._id }, { $push: { reservationRequest: createdReq._id } }, { session });
         return createdReq;
       });
     } finally {
       await session.endSession();
     }
-    const populatedRequest = await this.reservationRepository.query()
-    .findById(insertedDoc._id)
-    .populate('book')
-    .populate('user');
+    const populatedRequest = await this.reservationRepository
+      .query()
+      .findById(insertedDoc._id)
+      .populate('book')
+      .populate('user');
     if (!populatedRequest) {
       throw new BadRequestException('Error populating borrow record after creation.');
     }

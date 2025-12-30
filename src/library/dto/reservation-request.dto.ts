@@ -3,11 +3,11 @@ import { Types } from 'mongoose';
 
 import { RequestStatus } from 'src/database/schemas/enums/request-status.enum';
 import { Role } from 'src/database/schemas/enums/role.enum';
-import { ReservationRequestDocument } from 'src/database/schemas/reservation-request.schema';
+import * as reservationRequestSchema from 'src/database/schemas/reservation-request.schema';
 import { DateField, EnumField, StringField } from '../../common/decorators/field.decorators';
 import { AbstractSoftDto } from './abstract-soft.dto';
-import { BookDto } from './book.dto';
-import { UserDto } from './user.dto';
+import { BookDto, BookDtoDemo } from './book.dto';
+import { UserDto, UserDtoDemo } from './user.dto';
 
 export class ReservationRequestDto extends AbstractSoftDto {
   @StringField({
@@ -46,7 +46,7 @@ export class ReservationRequestDto extends AbstractSoftDto {
   })
   active_until: Date;
 
-  constructor(reservationRequest: ReservationRequestDocument, role?: Role) {
+  constructor(reservationRequest: reservationRequestSchema.ReservationRequestDocument, role?: Role) {
     super(reservationRequest, role);
     this.id = reservationRequest.id;
     this.user = reservationRequest.user
@@ -59,6 +59,56 @@ export class ReservationRequestDto extends AbstractSoftDto {
         ? reservationRequest.book.toString()
         : new BookDto(reservationRequest.book, role)
       : undefined;
+    this.requestDate = reservationRequest.requestDate;
+    this.requestStatus = reservationRequest.requestStatus;
+    this.active_until = reservationRequest.active_until;
+  }
+}
+import { ObjectType, Field, ID } from '@nestjs/graphql';
+// import { Types } from 'mongoose';
+// import { RequestStatus } from 'src/database/schemas/enums/request-status.enum';
+// import { Role } from 'src/database/schemas/enums/role.enum';
+// import { ReservationRequestDocument } from 'src/database/schemas/reservation-request.schema';
+// import { AbstractSoftDto } from './abstract-soft.dto';
+// import { BookDto } from './book.dto';
+// import { UserDto } from './user.dto';
+
+@ObjectType()
+export class ReservationRequestDtoDemo extends AbstractSoftDto {
+  @Field(() => ID)
+  id: string;
+
+  @Field(() => BookDtoDemo, { nullable: true })
+  book?: BookDtoDemo;
+
+  @Field(() => UserDtoDemo, { nullable: true })
+  user?: UserDtoDemo;
+
+  @Field()
+  requestDate: Date;
+
+  @Field(() => RequestStatus)
+  requestStatus: RequestStatus;
+
+  @Field({ nullable: true })
+  active_until?: Date;
+
+  constructor(reservationRequest: reservationRequestSchema.ReservationRequestDocument, role?: Role) {
+    super(reservationRequest, role);
+    this.id = reservationRequest.id;
+
+    this.user = reservationRequest.user
+      ? reservationRequest.user instanceof Types.ObjectId
+        ? undefined
+        : new UserDtoDemo(reservationRequest.user)
+      : undefined;
+
+    this.book = reservationRequest.book
+      ? reservationRequest.book instanceof Types.ObjectId
+        ? undefined
+        : new BookDtoDemo(reservationRequest.book, role)
+      : undefined;
+
     this.requestDate = reservationRequest.requestDate;
     this.requestStatus = reservationRequest.requestStatus;
     this.active_until = reservationRequest.active_until;

@@ -1,20 +1,20 @@
 import { InjectQueue } from '@nestjs/bullmq';
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { InjectConnection } from '@nestjs/mongoose';
 import { Queue } from 'bullmq';
 import { add, addDays, startOfDay } from 'date-fns';
 import { ClientSession, Connection, Types } from 'mongoose';
 
+import { BookRepository } from 'src/database/repositories/book.repository';
 import { BorrowRecordRepository } from 'src/database/repositories/borrow-record.repository';
 import { ReservationRequestRepository } from 'src/database/repositories/reservation-request.repository';
+import { UserRepository } from 'src/database/repositories/user.repository';
 import { BookDocument } from 'src/database/schemas/book.schema';
 import { BorrowRecord, BorrowRecordDocument } from 'src/database/schemas/borrow-record.schema';
 import { AvailabilityStatus } from 'src/database/schemas/enums/availibity-status.enum';
 import { ReservationRequestDocument } from 'src/database/schemas/reservation-request.schema';
 import { RequestStatus } from '../../database/schemas/enums/request-status.enum';
 import { CheckoutReservationRequestDto } from '../dto/checkout-reservation-request.dto';
-import { InjectConnection } from '@nestjs/mongoose';
-import { BookRepository } from 'src/database/repositories/book.repository';
-import { UserRepository } from 'src/database/repositories/user.repository';
 
 @Injectable()
 export class ReservationRequestService {
@@ -30,7 +30,7 @@ export class ReservationRequestService {
     @InjectQueue('mail-queue') private mailQueue: Queue,
 
     @InjectConnection()
-    private readonly connection: Connection,
+    private readonly connection: Connection
   ) {}
 
   public async get() {
@@ -98,26 +98,31 @@ export class ReservationRequestService {
       saved = await session.withTransaction(async () => {
         reservation.requestStatus = RequestStatus.FULFILLED;
         await reservation.save({ session });
-        const createdRecord =  await this.borrowRecordRepository.query().insertOne(newRecord, { session });
-        await this.bookRepository.query().updateOne(
-          { _id: reservation.book._id },
-          { $push: { borrowRecord: createdRecord._id } },
-          { session }
-        );
-        await this.userRepository.query().updateOne(
-          { _id: reservation.user._id },
-          { $push: { borrowRecord: createdRecord._id } },
-          { session }
-        );
+        const createdRecord = await this.borrowRecordRepository.query().insertOne(newRecord, { session });
+        await this.bookRepository
+          .query()
+          .updateOne(
+            { _id: reservation.book._id },
+            { $push: { borrowRecord: createdRecord._id } },
+            { session }
+          );
+        await this.userRepository
+          .query()
+          .updateOne(
+            { _id: reservation.user._id },
+            { $push: { borrowRecord: createdRecord._id } },
+            { session }
+          );
         return createdRecord;
       });
     } finally {
       await session.endSession();
     }
-    const populatedRecord = await this.borrowRecordRepository.query()
-    .findById(saved._id)
-    .populate('book')
-    .populate('user');
+    const populatedRecord = await this.borrowRecordRepository
+      .query()
+      .findById(saved._id)
+      .populate('book')
+      .populate('user');
     if (!populatedRecord) {
       throw new BadRequestException('Error populating borrow record after creation.');
     }
